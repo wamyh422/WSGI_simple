@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WSGI Streaming Echo</title>
+</head>
+<body>
+    <h1>WSGI Streaming Echo</h1>
+    <input type="text" id="inputText" placeholder="輸入文字">
+    <button onclick="sendText()">送出</button>
+    <div id="output"></div>
+
+    <script>
+        function sendText() {
+            let inputText = document.getElementById("inputText").value;
+            let outputDiv = document.getElementById("output");
+            outputDiv.innerHTML = "";  // 清空結果
+
+            fetch("http://localhost:8000/echo", {
+                method: "POST",
+                body: inputText
+            }).then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                function readStream() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) return;
+                        outputDiv.innerHTML += decoder.decode(value);
+                        readStream();  // 讀取下一部分
+                    });
+                }
+
+                readStream();  // 開始讀取
+            }).catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>
